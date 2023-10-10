@@ -1,22 +1,70 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="/src/opencv.js" type="text/javascript"></script>
-    <title>Img Diff</title>
-  </head>
-  <body>
-    <h1>A</h1>
-    <canvas id="a"></canvas>
-    
-    <h1>B</h1>
-    <canvas id="b"></canvas>
-    
-    <h1>Diff</h1>
-    <canvas id="diff"></canvas>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="/src/opencv.js" type="text/javascript"></script>
+  <title>Img Diff</title>
+</head>
+
+<body>
+  <div class="imggroup">
+    <div>
+      <h1>A</h1>
+      <canvas id="a"></canvas>
+    </div>
+
+    <div>
+      <div style="display: flex; flex-direction: row;   align-items: center;">
+        <h1>Highlight Diff</h1>
+        <div>
+          ORB Distance:&nbsp;<span id="score">&hellip;</span>&nbsp;(&isin; [0,1])
+          <label>
+            Contour Area:&nbsp;
+            <input type="number" value="20" min="0" max="500" step="10" id="contourArea">
+          </label>
+        </div>
+      </div>
+      <canvas id="diff"></canvas>
+    </div>
+
+    <div>
+      <h1>B</h1>
+      <canvas id="b"></canvas>
+    </div>
+  </div>
 
 
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+  <div class="imggroup">
+    <div>
+      <h1>Diff Mask</h1>
+      <canvas id="mask"></canvas>
+    </div>
+
+    <div>
+      <label>
+        <h1>Dilate Diff </h1>
+        Iteration:&nbsp;
+        <input type="number" value="1" min="0" max="10" step="1" id="dilateIterations">
+        <input type="checkbox" id="syncIterations" checked>
+          Sync with Erode
+        </label>
+      </label>
+      <canvas id="dilate"></canvas>
+    </div>
+
+    <div>
+      <label>
+        <h1>Erode Diff</h1>
+        Iteration:&nbsp;
+        <input type="number" value="1" min="0" max="10" step="1" id="erodeIterations">
+      </label>
+      <canvas id="erode"></canvas>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>
