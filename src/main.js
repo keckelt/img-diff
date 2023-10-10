@@ -4,7 +4,7 @@ import b from './B.png'
 
 async function yolo() {
   // load a into canvas #a
-  const canvasA = document.getElementById('a') as HTMLCanvasElement;
+  const canvasA = document.getElementById('a');
   const imgA = new Image();
   imgA.src = a;
   await imgA.decode();
@@ -24,7 +24,7 @@ async function yolo() {
 
 
   // load a into canvas #a
-  const canvasB = document.getElementById('b') as HTMLCanvasElement;
+  const canvasB = document.getElementById('b');
   const imgB = new Image();
   imgB.src = b;
   await imgB.decode();
@@ -76,8 +76,6 @@ async function yolo() {
 
   let diffImg = new cv.Mat();
   cv.absdiff(compareImg, baseImg, diffImg);
-  let tresh = new cv.Mat();
-  // cv.threshold(diffImg, tresh, 0, 255, cv.THRESH_BINARY);
   const grayImg = new cv.Mat();
   cv.cvtColor(diffImg, grayImg, cv.COLOR_BGR2GRAY);
 
@@ -89,15 +87,15 @@ async function yolo() {
   const kernel = cv.Mat.ones(5, 5, cv.CV_8U);
   const dilate = new cv.Mat();
   // get iterations from slider #dilateIterations
-  let slider = document.getElementById<HTMLInputElement>('dilateIterations');
-  let iterations = slider != null ? parseInt((slider as HTMLInputElement).value) : 2;
+  let slider = document.getElementById('dilateIterations');
+  let iterations = slider != null ? parseInt((slider).value) : 2;
 
   cv.dilate(imask, dilate, kernel, new cv.Point(-1, -1), iterations, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
   cv.imshow('dilate', dilate);
 
   const erode = new cv.Mat();
-  slider = document.getElementById<HTMLInputElement>('erodeIterations');
-  iterations = slider != null ? parseInt((slider as HTMLInputElement).value) : 2;
+  slider = document.getElementById('erodeIterations');
+  iterations = slider != null ? parseInt((slider).value) : 2;
   cv.erode(dilate, erode, kernel, new cv.Point(-1, -1), iterations, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
   cv.imshow('erode', erode);
 
@@ -118,8 +116,8 @@ async function yolo() {
     cv.addWeighted(compareImg, 0.5, baseImg, 0.5, 0, diffImg, dtype);
 
       
-    slider = document.getElementById<HTMLInputElement>('contourArea');
-    const minArea = slider != null ? parseInt((slider as HTMLInputElement).value) : 100;
+    slider = document.getElementById('contourArea');
+    const minArea = slider != null ? parseInt((slider).value) : 100;
 
     for (const contour of contoursArray) {
       if (cv.contourArea(contour) > minArea) {
@@ -195,9 +193,9 @@ else {
   }
 }
 
-const syncCheckbox = document.getElementById('syncIterations') as HTMLInputElement;
-const dilateInput = document.getElementById('dilateIterations') as HTMLInputElement;
-const erodeInput = document.getElementById('erodeIterations') as HTMLInputElement;
+const syncCheckbox = document.getElementById('syncIterations');
+const dilateInput = document.getElementById('dilateIterations');
+const erodeInput = document.getElementById('erodeIterations');
 
 syncCheckbox.addEventListener('change', () => {
   if (syncCheckbox.checked) {
@@ -217,12 +215,12 @@ erodeInput.addEventListener('input', () => {
   }
 });
 
-let timeoutId: number | undefined;
+let timeoutId;
 
 [
-  document.getElementById<HTMLInputElement>('dilateIterations'),
-  document.getElementById<HTMLInputElement>('erodeIterations'),
-  document.getElementById<HTMLInputElement>('contourArea')
+  document.getElementById('dilateIterations'),
+  document.getElementById('erodeIterations'),
+  document.getElementById('contourArea')
 ].forEach((slider) => {
   if (slider !== null) {
     slider.addEventListener('input', () => {
