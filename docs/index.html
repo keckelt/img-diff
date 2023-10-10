@@ -13,13 +13,13 @@
 <body>
   <div class="imggroup">
     <div>
-      <h1>A</h1>
+      <h1>Base Image</h1>
       <canvas id="a"></canvas>
     </div>
 
     <div>
       <div style="display: flex; flex-direction: row;   align-items: center;">
-        <h1>Highlight Diff</h1>
+        <h1>4. Highlighted Diff</h1>
         <div>
           ORB Distance:&nbsp;<span id="score">&hellip;</span>&nbsp;(&isin; [0,1])
           <label>
@@ -32,7 +32,7 @@
     </div>
 
     <div>
-      <h1>B</h1>
+      <h1>Compare Image</h1>
       <canvas id="b"></canvas>
     </div>
   </div>
@@ -40,13 +40,13 @@
 
   <div class="imggroup">
     <div>
-      <h1>Diff Mask</h1>
+      <h1>1. Get Diff Mask</h1>
       <canvas id="mask"></canvas>
     </div>
 
     <div>
       <label>
-        <h1>Dilate Diff </h1>
+        <h1>2. Dilate Diff </h1>
         Iteration:&nbsp;
         <input type="number" value="1" min="0" max="10" step="1" id="dilateIterations">
         <input type="checkbox" id="syncIterations" checked>
@@ -58,7 +58,7 @@
 
     <div>
       <label>
-        <h1>Erode Diff</h1>
+        <h1>3. Erode Diff</h1>
         Iteration:&nbsp;
         <input type="number" value="1" min="0" max="10" step="1" id="erodeIterations">
       </label>
