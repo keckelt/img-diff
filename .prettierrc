@@ -1,0 +1,6 @@
+{
+    "max-len": [2, 160, 4, {
+        "ignoreUrls": true,
+        "ignoreComments": false
+    }]
+}
