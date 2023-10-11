@@ -38,8 +38,9 @@ async function yolo() {
     return;
   }
 
-  // ctxB.fillStyle = 'white';
-  // ctxB.fillRect(0, 0, canvasB.width, canvasB.height);
+  // fill with white first  in case it is smaller
+  ctxB.fillStyle = 'white';
+  ctxB.fillRect(0, 0, canvasB.width, canvasB.height);
   ctxB.drawImage(imgB, 0, 0);
 
   const baseImgData = ctx.getImageData(0, 0, canvasA.width, canvasA.height);
@@ -84,7 +85,7 @@ async function yolo() {
   cv.threshold(grayImg, imask, th, 255, cv.THRESH_BINARY);
   cv.imshow('mask', imask);
 
-  const kernel = cv.Mat.ones(5, 5, cv.CV_8U);
+  const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
   const dilate = new cv.Mat();
   // get iterations from slider #dilateIterations
   let slider = document.getElementById('dilateIterations');
@@ -110,25 +111,38 @@ async function yolo() {
       contoursArray.push(contours.get(i));
     }
 
-    let diffImg = new cv.Mat();
-    let mask = new cv.Mat();
-    let dtype = -1;
-    cv.addWeighted(compareImg, 0.5, baseImg, 0.5, 0, diffImg, dtype);
+    slider = document.getElementById('transparency');
+    const transparency = slider != null ? parseFloat((slider).value) : 0;
 
-      
+    let diffImg = new cv.Mat();
+    let dtype = -1;
+    cv.addWeighted(compareImg, 0.5-transparency, baseImg, 0.5+transparency, 0, diffImg, dtype);
+
     slider = document.getElementById('contourArea');
-    const minArea = slider != null ? parseInt((slider).value) : 100;
+    const maxArea = slider != null ? parseInt((slider).value) : Infinity;
 
     for (const contour of contoursArray) {
-      if (cv.contourArea(contour) > minArea) {
-        const rect = cv.boundingRect(contour);
-        const pt1 = new cv.Point(rect.x, rect.y);
-        const pt2 = new cv.Point(rect.x + rect.width, rect.y + rect.height);
-        cv.rectangle(diffImg, pt1, pt2, new cv.Scalar(0, 0, 255), 2);
-        cv.rectangle(diffImg, pt1, pt2, new cv.Scalar(0, 0, 255), 2);
+      if (cv.contourArea(contour) < maxArea) {
+        const rectangle = false;
+        if(rectangle) {
+          const rect = cv.boundingRect(contour);
+          const pt1 = new cv.Point(rect.x, rect.y);
+          const pt2 = new cv.Point(rect.x + rect.width, rect.y + rect.height);
+          cv.rectangle(diffImg, pt1, pt2, new cv.Scalar(255, 0, 0, 255), 1); // scaler = color in RGB-Opacity format
+        } else {
+          let hull = new cv.Mat();
+          cv.convexHull(contour, hull, false, true);
+  
+          // Draw the convex hull
+          let color = new cv.Scalar(255, 0, 0, 255);
+          let thickness = 2;
+          let lineType = cv.LINE_8;
+          const hulls = new cv.MatVector();
+          hulls.push_back(hull);	
+          cv.drawContours(diffImg, hulls, 0, color, thickness, lineType);
+        }
       }
     }
-
 
     cv.imshow('diff', diffImg);
   } catch (e) {
@@ -220,7 +234,8 @@ let timeoutId;
 [
   document.getElementById('dilateIterations'),
   document.getElementById('erodeIterations'),
-  document.getElementById('contourArea')
+  document.getElementById('contourArea'),
+  document.getElementById('transparency'),
 ].forEach((slider) => {
   if (slider !== null) {
     slider.addEventListener('input', () => {
