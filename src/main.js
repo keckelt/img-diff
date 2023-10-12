@@ -54,10 +54,11 @@ async function yolo() {
   const compareImg = cv.matFromImageData(compareImageData);
 
   orbScore(baseImg, compareImg);
-  
+
+  // const addedContours = getDiffContours(baseImg, compareImg);
   const removedContours = getDiffContours(compareImg, baseImg);
-  const addedContours = getDiffContours(baseImg, compareImg);
-  
+  const addedContours = [];
+
   try {
     const contourAreaInput = document.getElementById("contourArea");
     const maxArea = contourAreaInput != null ? parseInt(contourAreaInput.value) : Infinity;
@@ -77,10 +78,10 @@ async function yolo() {
           const rect = cv.boundingRect(contour);
           const pt1 = new cv.Point(rect.x, rect.y);
           const pt2 = new cv.Point(rect.x + rect.width, rect.y + rect.height);
-          
+
           let overlay = compareImg.clone();
-          cv.rectangle(overlay, pt1, pt2,  color, thickness); // scaler = color in RGB-Opacity format
-          cv.addWeighted(overlay, overlayWeight, compareImg, 1-overlayWeight, 0, compareImg, -1);
+          cv.rectangle(overlay, pt1, pt2, color, thickness); // scaler = color in RGB-Opacity format
+          cv.addWeighted(overlay, overlayWeight, compareImg, 1 - overlayWeight, 0, compareImg, -1);
         } else {
           let hull = new cv.Mat();
           cv.convexHull(contour, hull, false, true);
@@ -92,7 +93,7 @@ async function yolo() {
 
           let overlay = compareImg.clone();
           cv.drawContours(overlay, hulls, 0, color, thickness, lineType);
-          cv.addWeighted(overlay, overlayWeight, compareImg, 1-overlayWeight, 0, compareImg, -1);
+          cv.addWeighted(overlay, overlayWeight, compareImg, 1 - overlayWeight, 0, compareImg, -1);
         }
       }
     }
@@ -105,10 +106,10 @@ async function yolo() {
           const rect = cv.boundingRect(contour);
           const pt1 = new cv.Point(rect.x, rect.y);
           const pt2 = new cv.Point(rect.x + rect.width, rect.y + rect.height);
-          
+
           let overlay = baseImg.clone();
-          cv.rectangle(overlay, pt1, pt2,  color, thickness); // scaler = color in RGB-Opacity format
-          cv.addWeighted(overlay, overlayWeight, baseImg, 1-overlayWeight, 0, baseImg, -1);
+          cv.rectangle(overlay, pt1, pt2, color, thickness); // scaler = color in RGB-Opacity format
+          cv.addWeighted(overlay, overlayWeight, baseImg, 1 - overlayWeight, 0, baseImg, -1);
         } else {
           let hull = new cv.Mat();
           cv.convexHull(contour, hull, false, true);
@@ -120,7 +121,7 @@ async function yolo() {
 
           let overlay = baseImg.clone();
           cv.drawContours(overlay, hulls, 0, color, thickness, lineType);
-          cv.addWeighted(overlay, overlayWeight, baseImg, 1-overlayWeight, 0, baseImg, -1);
+          cv.addWeighted(overlay, overlayWeight, baseImg, 1 - overlayWeight, 0, baseImg, -1);
           // cv.drawContours(baseImg, hulls, 0, color, thickness, lineType);s
         }
       }
@@ -132,7 +133,7 @@ async function yolo() {
 
     let diffImg = new cv.Mat();
     let dtype = -1;
-    cv.addWeighted( compareImg, 0.5 + transparency, baseImg, 0.5 - transparency, 0, diffImg, dtype );
+    cv.addWeighted(compareImg, 0.5 + transparency, baseImg, 0.5 - transparency, 0, diffImg, dtype);
 
     cv.imshow("diff", diffImg);
   } catch (e) {
@@ -264,34 +265,31 @@ function getDiffContours(compareImg, baseImg) {
     contoursArray.push(contours.get(i));
   }
 
-  return contoursArray;
+  // Filter out contours that are within others
+  const filteredContours = new Set();
+  for (let i = 0; i < contoursArray.length; i++) {
+    const boundingRectA = cv.boundingRect(contoursArray[i]);
+    let aWasNestedAtLeastOnce = false;
+    for (let j = 0; j < contoursArray.length; j++) {
+      const boundingRectB = cv.boundingRect(contoursArray[j]);
 
-//   // Filter out contours that are within others
-//   const filteredContours = new Set();
-//   for (let i = 0; i < contoursArray.length; i++) {
-//       const boundingRect = cv.boundingRect(contoursArray[i]);
-//       // convvert boundingRect to polygon
-//       const points = [[boundingRect.x, boundingRect.y], [boundingRect.x + boundingRect.width, boundingRect.y], [boundingRect.x + boundingRect.width, boundingRect.y + boundingRect.height], [boundingRect.x, boundingRect.y + boundingRect.height]]
-//       let rectContour = new cv.MatVector();
-//       let mat = cv.matFromArray(1, points.length, cv.CV_32SC2, points.flat(2));
-//       rectContour.push_back(mat);
-//       for (let j = i + 1; j < contoursArray.length; j++) {
-//         let isWithin = false;
-//         for (let k = 0; k < contoursArray[j].data32S.length; k += 2) {
-//           const point = { x: contoursArray[j].data32S[k], y: contoursArray[j].data32S[k + 1] };
-//           if (i !== j && cv.pointPolygonTest(mat, point, false) >= 0) {
-//             // point is outside --> add contour
-//             isWithin = true;
-//             break;
-//           }
-//         }
-//         if (!isWithin) {
-//           filteredContours.add(contoursArray[j]);
-//         }
-//       }
-//   }
+      const aIsInB =  boundingRectB.x < boundingRectA.x && boundingRectB.y < boundingRectA.y &&  // is A's top left corner inside B?
+        boundingRectB.x + boundingRectB.width > boundingRectA.x + boundingRectA.width &&  // is A's width smaller than B's?
+        boundingRectB.y + boundingRectB.height > boundingRectA.y + boundingRectA.height;  // is A's height smaller than B's?
 
-//   return filteredContours;
+      if(aIsInB) {
+          // B is within A
+          aWasNestedAtLeastOnce = true;
+        } else {
+        // noop
+      }
+    }
+    if (!aWasNestedAtLeastOnce) {
+      filteredContours.add(contoursArray[i]);
+    }
+  }
+
+  return filteredContours;
 }
 
 function orbScore(baseImg, compareImg) {
@@ -325,7 +323,7 @@ function orbScore(baseImg, compareImg) {
     // format to 3 floating points
     score.innerText = matchScore.toFixed(3);
   }
-  
+
   baseKeypoints.delete();
   compareKeypoints.delete();
   baseDescriptors.delete();
