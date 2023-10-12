@@ -84,7 +84,7 @@ async function yolo() {
         } else {
           let hull = new cv.Mat();
           cv.convexHull(contour, hull, false, true);
-          
+
           // Draw the convex hull
           let lineType = cv.LINE_8;
           const hulls = new cv.MatVector();
@@ -257,12 +257,41 @@ function getDiffContours(compareImg, baseImg) {
 
   const contours = new cv.MatVector();
   const hierarchy = new cv.Mat();
+  // RETR_EXTERNAL ... returns only extreme outer flags. All child contours are left behind. see https://docs.opencv.org/4.x/d9/d8b/tutorial_py_contours_hierarchy.html
   cv.findContours(erode, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
   const contoursArray = [];
   for (let i = 0; i < contours.size(); i++) {
     contoursArray.push(contours.get(i));
   }
-  return contoursArray
+
+  return contoursArray;
+
+//   // Filter out contours that are within others
+//   const filteredContours = new Set();
+//   for (let i = 0; i < contoursArray.length; i++) {
+//       const boundingRect = cv.boundingRect(contoursArray[i]);
+//       // convvert boundingRect to polygon
+//       const points = [[boundingRect.x, boundingRect.y], [boundingRect.x + boundingRect.width, boundingRect.y], [boundingRect.x + boundingRect.width, boundingRect.y + boundingRect.height], [boundingRect.x, boundingRect.y + boundingRect.height]]
+//       let rectContour = new cv.MatVector();
+//       let mat = cv.matFromArray(1, points.length, cv.CV_32SC2, points.flat(2));
+//       rectContour.push_back(mat);
+//       for (let j = i + 1; j < contoursArray.length; j++) {
+//         let isWithin = false;
+//         for (let k = 0; k < contoursArray[j].data32S.length; k += 2) {
+//           const point = { x: contoursArray[j].data32S[k], y: contoursArray[j].data32S[k + 1] };
+//           if (i !== j && cv.pointPolygonTest(mat, point, false) >= 0) {
+//             // point is outside --> add contour
+//             isWithin = true;
+//             break;
+//           }
+//         }
+//         if (!isWithin) {
+//           filteredContours.add(contoursArray[j]);
+//         }
+//       }
+//   }
+
+//   return filteredContours;
 }
 
 function orbScore(baseImg, compareImg) {
