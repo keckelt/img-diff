@@ -2,6 +2,8 @@ import "./style.css";
 import a from "./A.png";
 import b from "./B.png";
 
+// inspired by https://github.com/kostasthanos/Spot-The-Differences
+
 async function yolo() {
   // load a into canvas #a
   const canvasA = document.getElementById("a");
@@ -49,7 +51,7 @@ async function yolo() {
     0,
     0,
     canvasB.width,
-    canvasB.height
+    canvasB.height,
   );
   const compareImg = cv.matFromImageData(compareImageData);
 
@@ -60,12 +62,15 @@ async function yolo() {
 
   try {
     const contourAreaInput = document.getElementById("contourArea");
-    const maxArea = contourAreaInput != null ? parseInt(contourAreaInput.value) : Infinity;
+    const maxArea =
+      contourAreaInput != null ? parseInt(contourAreaInput.value) : Infinity;
 
     const thickness = 2;
     const contourDrawOpacity = 255; // draw contour fully opaque because it would set the pixels' opacity and not make the contour itself transparent
     let overlayWeight = 0.75; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
-    const rectangle = document.querySelector('input[name="contourType"]:checked').value === "rectangle";
+    const rectangle =
+      document.querySelector('input[name="contourType"]:checked').value ===
+      "rectangle";
     // draw added contours on compareImage
     for (const contour of addedContours) {
       if (cv.contourArea(contour) < maxArea) {
@@ -80,7 +85,15 @@ async function yolo() {
 
           let overlay = compareImg.clone();
           cv.rectangle(overlay, pt1, pt2, color, thickness); // scaler = color in RGB-Opacity format
-          cv.addWeighted(overlay, overlayWeight, compareImg, 1 - overlayWeight, 0, compareImg, -1);
+          cv.addWeighted(
+            overlay,
+            overlayWeight,
+            compareImg,
+            1 - overlayWeight,
+            0,
+            compareImg,
+            -1,
+          );
         } else {
           let hull = new cv.Mat();
           cv.convexHull(contour, hull, false, true);
@@ -92,7 +105,15 @@ async function yolo() {
 
           let overlay = compareImg.clone();
           cv.drawContours(overlay, hulls, 0, color, thickness, lineType);
-          cv.addWeighted(overlay, overlayWeight, compareImg, 1 - overlayWeight, 0, compareImg, -1);
+          cv.addWeighted(
+            overlay,
+            overlayWeight,
+            compareImg,
+            1 - overlayWeight,
+            0,
+            compareImg,
+            -1,
+          );
         }
       }
     }
@@ -108,7 +129,15 @@ async function yolo() {
 
           let overlay = baseImg.clone();
           cv.rectangle(overlay, pt1, pt2, color, thickness); // scaler = color in RGB-Opacity format
-          cv.addWeighted(overlay, overlayWeight, baseImg, 1 - overlayWeight, 0, baseImg, -1);
+          cv.addWeighted(
+            overlay,
+            overlayWeight,
+            baseImg,
+            1 - overlayWeight,
+            0,
+            baseImg,
+            -1,
+          );
         } else {
           let hull = new cv.Mat();
           cv.convexHull(contour, hull, false, true);
@@ -120,7 +149,15 @@ async function yolo() {
 
           let overlay = baseImg.clone();
           cv.drawContours(overlay, hulls, 0, color, thickness, lineType);
-          cv.addWeighted(overlay, overlayWeight, baseImg, 1 - overlayWeight, 0, baseImg, -1);
+          cv.addWeighted(
+            overlay,
+            overlayWeight,
+            baseImg,
+            1 - overlayWeight,
+            0,
+            baseImg,
+            -1,
+          );
           // cv.drawContours(baseImg, hulls, 0, color, thickness, lineType);s
         }
       }
@@ -128,11 +165,20 @@ async function yolo() {
 
     // merge the images
     const transparencySlider = document.getElementById("transparency");
-    const transparency = transparencySlider != null ? parseFloat(transparencySlider.value) : 0;
+    const transparency =
+      transparencySlider != null ? parseFloat(transparencySlider.value) : 0;
 
     let diffImg = new cv.Mat();
     let dtype = -1;
-    cv.addWeighted(compareImg, 0.5 + transparency, baseImg, 0.5 - transparency, 0, diffImg, dtype);
+    cv.addWeighted(
+      compareImg,
+      0.5 + transparency,
+      baseImg,
+      0.5 - transparency,
+      0,
+      diffImg,
+      dtype,
+    );
 
     cv.imshow("diff", diffImg);
   } catch (e) {
@@ -214,7 +260,7 @@ let timeoutId;
   document.getElementById("contourArea"),
   document.getElementById("transparency"),
   document.getElementById("transparency"),
-  ...document.querySelectorAll(`input[name="contourType"]`)
+  ...document.querySelectorAll(`input[name="contourType"]`),
 ].forEach((slider) => {
   if (slider !== null) {
     slider.addEventListener("input", () => {
@@ -246,19 +292,41 @@ function getDiffContours(compareImg, baseImg) {
   let slider = document.getElementById("dilateIterations");
   let iterations = slider != null ? parseInt(slider.value) : 2;
 
-  cv.dilate(imask, dilate, kernel, new cv.Point(-1, -1), iterations, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
+  cv.dilate(
+    imask,
+    dilate,
+    kernel,
+    new cv.Point(-1, -1),
+    iterations,
+    cv.BORDER_CONSTANT,
+    cv.morphologyDefaultBorderValue(),
+  );
   cv.imshow("dilate", dilate);
 
   const erode = new cv.Mat();
   slider = document.getElementById("erodeIterations");
   iterations = slider != null ? parseInt(slider.value) : 2;
-  cv.erode(dilate, erode, kernel, new cv.Point(-1, -1), iterations, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
+  cv.erode(
+    dilate,
+    erode,
+    kernel,
+    new cv.Point(-1, -1),
+    iterations,
+    cv.BORDER_CONSTANT,
+    cv.morphologyDefaultBorderValue(),
+  );
   cv.imshow("erode", erode);
 
   const contours = new cv.MatVector();
   const hierarchy = new cv.Mat();
   // RETR_EXTERNAL ... returns only extreme outer flags. All child contours are left behind. see https://docs.opencv.org/4.x/d9/d8b/tutorial_py_contours_hierarchy.html
-  cv.findContours(erode, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+  cv.findContours(
+    erode,
+    contours,
+    hierarchy,
+    cv.RETR_EXTERNAL,
+    cv.CHAIN_APPROX_SIMPLE,
+  );
   const contoursArray = [];
   for (let i = 0; i < contours.size(); i++) {
     contoursArray.push(contours.get(i));
@@ -269,17 +337,21 @@ function getDiffContours(compareImg, baseImg) {
   for (let i = 0; i < contoursArray.length; i++) {
     const boundingRectA = cv.boundingRect(contoursArray[i]);
     let aWasNestedAtLeastOnce = false;
-    for (let j = i+1; j < contoursArray.length; j++) {
+    for (let j = i + 1; j < contoursArray.length; j++) {
       const boundingRectB = cv.boundingRect(contoursArray[j]);
 
-      const aIsInB =  boundingRectB.x <= boundingRectA.x && boundingRectB.y <= boundingRectA.y &&  // is A's top left corner inside B?
-        boundingRectB.x + boundingRectB.width >= boundingRectA.x + boundingRectA.width &&  // is A's width smaller than B's?
-        boundingRectB.y + boundingRectB.height >= boundingRectA.y + boundingRectA.height;  // is A's height smaller than B's?
+      const aIsInB =
+        boundingRectB.x <= boundingRectA.x &&
+        boundingRectB.y <= boundingRectA.y && // is A's top left corner inside B?
+        boundingRectB.x + boundingRectB.width >=
+          boundingRectA.x + boundingRectA.width && // is A's width smaller than B's?
+        boundingRectB.y + boundingRectB.height >=
+          boundingRectA.y + boundingRectA.height; // is A's height smaller than B's?
 
-      if(aIsInB) {
-          // B is within A
-          aWasNestedAtLeastOnce = true;
-        } else {
+      if (aIsInB) {
+        // B is within A
+        aWasNestedAtLeastOnce = true;
+      } else {
         // noop
       }
     }
@@ -302,7 +374,7 @@ function orbScore(baseImg, compareImg) {
     compareImg,
     new cv.Mat(),
     compareKeypoints,
-    compareDescriptors
+    compareDescriptors,
   );
 
   const bfMatcher = new cv.BFMatcher(cv.NORM_HAMMING, true);
@@ -329,4 +401,3 @@ function orbScore(baseImg, compareImg) {
   compareDescriptors.delete();
   matches.delete();
 }
-
