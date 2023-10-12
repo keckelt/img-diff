@@ -55,9 +55,8 @@ async function yolo() {
 
   orbScore(baseImg, compareImg);
 
-  // const addedContours = getDiffContours(baseImg, compareImg);
+  const addedContours = getDiffContours(baseImg, compareImg);
   const removedContours = getDiffContours(compareImg, baseImg);
-  const addedContours = [];
 
   try {
     const contourAreaInput = document.getElementById("contourArea");
