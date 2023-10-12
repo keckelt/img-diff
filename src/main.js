@@ -65,19 +65,22 @@ async function yolo() {
     const thickness = 2;
     const contourDrawOpacity = 255; // draw contour fully opaque because it would set the pixels' opacity and not make the contour itself transparent
     let overlayWeight = 0.75; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
-
+    const rectangle = document.querySelector('input[name="contourType"]:checked').value === "rectangle";
     // draw added contours on compareImage
     for (const contour of addedContours) {
       if (cv.contourArea(contour) < maxArea) {
         // see if rectangle radio button is checked
-        const rectangle = document.querySelector('input[name="contourType"]:checked').value === "rectangle";
         let color = new cv.Scalar(102, 194, 165, contourDrawOpacity);
+
+        // draw contours as rectangle or convex hull. see https://docs.opencv.org/3.4/dd/d49/tutorial_py_contour_features.html
         if (rectangle) {
           const rect = cv.boundingRect(contour);
           const pt1 = new cv.Point(rect.x, rect.y);
           const pt2 = new cv.Point(rect.x + rect.width, rect.y + rect.height);
           
-          cv.rectangle(compareImg, pt1, pt2,  color, thickness); // scaler = color in RGB-Opacity format
+          let overlay = compareImg.clone();
+          cv.rectangle(overlay, pt1, pt2,  color, thickness); // scaler = color in RGB-Opacity format
+          cv.addWeighted(overlay, overlayWeight, compareImg, 1-overlayWeight, 0, compareImg, -1);
         } else {
           let hull = new cv.Mat();
           cv.convexHull(contour, hull, false, true);
@@ -97,13 +100,15 @@ async function yolo() {
     // draw removed contours on base Image
     for (const contour of removedContours) {
       if (cv.contourArea(contour) < maxArea) {
-        const rectangle = false;
         let color = new cv.Scalar(240, 82, 104, contourDrawOpacity);
         if (rectangle) {
           const rect = cv.boundingRect(contour);
           const pt1 = new cv.Point(rect.x, rect.y);
           const pt2 = new cv.Point(rect.x + rect.width, rect.y + rect.height);
-          cv.rectangle(baseImg, pt1, pt2, color, thickness,); // scaler = color in RGB-Opacity format
+          
+          let overlay = baseImg.clone();
+          cv.rectangle(overlay, pt1, pt2,  color, thickness); // scaler = color in RGB-Opacity format
+          cv.addWeighted(overlay, overlayWeight, baseImg, 1-overlayWeight, 0, baseImg, -1);
         } else {
           let hull = new cv.Mat();
           cv.convexHull(contour, hull, false, true);
