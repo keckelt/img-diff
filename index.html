@@ -36,6 +36,15 @@
               />
               &nbsp;Ref
             </label>
+            <div style="display: flex;">
+              Contour:&nbsp;
+              <label>
+                <input type="radio" name="contourType" value="rectangle"> Rectangle
+              </label>
+              <label>
+                <input type="radio" name="contourType" value="hull" checked> Convex Hull
+              </label>
+            </div>
           </div>
         </div>
         <canvas id="diff"></canvas>

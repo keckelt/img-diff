@@ -63,16 +63,20 @@ async function yolo() {
     const maxArea = contourAreaInput != null ? parseInt(contourAreaInput.value) : Infinity;
 
     const thickness = 2;
-    const opacity = 255;
+    const contourDrawOpacity = 255; // draw contour fully opaque because it would set the pixels' opacity and not make the contour itself transparent
+    let overlayWeight = 0.75; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
+
     // draw added contours on compareImage
     for (const contour of addedContours) {
       if (cv.contourArea(contour) < maxArea) {
-        const rectangle = false;
-        let color = new cv.Scalar(102, 194, 165, opacity);
+        // see if rectangle radio button is checked
+        const rectangle = document.querySelector('input[name="contourType"]:checked').value === "rectangle";
+        let color = new cv.Scalar(102, 194, 165, contourDrawOpacity);
         if (rectangle) {
           const rect = cv.boundingRect(contour);
           const pt1 = new cv.Point(rect.x, rect.y);
           const pt2 = new cv.Point(rect.x + rect.width, rect.y + rect.height);
+          
           cv.rectangle(compareImg, pt1, pt2,  color, thickness); // scaler = color in RGB-Opacity format
         } else {
           let hull = new cv.Mat();
@@ -83,9 +87,9 @@ async function yolo() {
           const hulls = new cv.MatVector();
           hulls.push_back(hull);
 
-          // let overlay = new cv.Mat(compareImg.rows, compareImg.cols, compareImg.type(), new cv.Scalar(0, 0, 0, 255));
-          cv.drawContours(compareImg, hulls, 0, color, thickness, lineType);
-          // cv.addWeighted(overlay, 1, compareImg, 1, 0, compareImg, -1);
+          let overlay = compareImg.clone();
+          cv.drawContours(overlay, hulls, 0, color, thickness, lineType);
+          cv.addWeighted(overlay, overlayWeight, compareImg, 1-overlayWeight, 0, compareImg, -1);
         }
       }
     }
@@ -94,7 +98,7 @@ async function yolo() {
     for (const contour of removedContours) {
       if (cv.contourArea(contour) < maxArea) {
         const rectangle = false;
-        let color = new cv.Scalar(240, 82, 104, opacity);
+        let color = new cv.Scalar(240, 82, 104, contourDrawOpacity);
         if (rectangle) {
           const rect = cv.boundingRect(contour);
           const pt1 = new cv.Point(rect.x, rect.y);
@@ -108,7 +112,11 @@ async function yolo() {
           let lineType = cv.LINE_8;
           const hulls = new cv.MatVector();
           hulls.push_back(hull);
-          cv.drawContours(baseImg, hulls, 0, color, thickness, lineType);
+
+          let overlay = baseImg.clone();
+          cv.drawContours(overlay, hulls, 0, color, thickness, lineType);
+          cv.addWeighted(overlay, overlayWeight, baseImg, 1-overlayWeight, 0, baseImg, -1);
+          // cv.drawContours(baseImg, hulls, 0, color, thickness, lineType);s
         }
       }
     }
@@ -200,6 +208,8 @@ let timeoutId;
   document.getElementById("erodeIterations"),
   document.getElementById("contourArea"),
   document.getElementById("transparency"),
+  document.getElementById("transparency"),
+  ...document.querySelectorAll(`input[name="contourType"]`)
 ].forEach((slider) => {
   if (slider !== null) {
     slider.addEventListener("input", () => {
