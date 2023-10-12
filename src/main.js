@@ -269,12 +269,12 @@ function getDiffContours(compareImg, baseImg) {
   for (let i = 0; i < contoursArray.length; i++) {
     const boundingRectA = cv.boundingRect(contoursArray[i]);
     let aWasNestedAtLeastOnce = false;
-    for (let j = 0; j < contoursArray.length; j++) {
+    for (let j = i+1; j < contoursArray.length; j++) {
       const boundingRectB = cv.boundingRect(contoursArray[j]);
 
-      const aIsInB =  boundingRectB.x < boundingRectA.x && boundingRectB.y < boundingRectA.y &&  // is A's top left corner inside B?
-        boundingRectB.x + boundingRectB.width > boundingRectA.x + boundingRectA.width &&  // is A's width smaller than B's?
-        boundingRectB.y + boundingRectB.height > boundingRectA.y + boundingRectA.height;  // is A's height smaller than B's?
+      const aIsInB =  boundingRectB.x <= boundingRectA.x && boundingRectB.y <= boundingRectA.y &&  // is A's top left corner inside B?
+        boundingRectB.x + boundingRectB.width >= boundingRectA.x + boundingRectA.width &&  // is A's width smaller than B's?
+        boundingRectB.y + boundingRectB.height >= boundingRectA.y + boundingRectA.height;  // is A's height smaller than B's?
 
       if(aIsInB) {
           // B is within A
