@@ -78,7 +78,7 @@ async function yolo() {
     const maxArea =
       contourAreaInput != null ? parseInt(contourAreaInput.value) : Infinity;
 
-    const thickness = 2;
+    const thickness = -1;
     const contourDrawOpacity = 255; // draw contour fully opaque because it would set the pixels' opacity and not make the contour itself transparent
     let diffOverlayWeight = 0.33; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
     const rectangle =
@@ -345,30 +345,35 @@ function getDiffContours(compareImg, baseImg) {
     contoursArray.push(contours.get(i));
   }
 
+  // return contoursArray;
+
   // Filter out contours that are within others
   const filteredContours = new Set();
+  // Calculate bounding rectangles for all contours
+  const boundingRects = contoursArray.map(contour => cv.boundingRect(contour));
+
   for (let i = 0; i < contoursArray.length; i++) {
-    const boundingRectA = cv.boundingRect(contoursArray[i]);
+    const boundingRectA = boundingRects[i];
     let aWasNestedAtLeastOnce = false;
+
     for (let j = 0; j < contoursArray.length; j++) {
-      const boundingRectB = cv.boundingRect(contoursArray[j]);
+      if (i !== j) {
+        const boundingRectB = boundingRects[j];
 
-      const aIsInB =
-        boundingRectB.x <= boundingRectA.x &&
-        boundingRectB.y <= boundingRectA.y && // is A's top left corner inside B or is it the same point?
-        boundingRectB.x + boundingRectB.width >=
-          boundingRectA.x + boundingRectA.width && // is A's width <= than B's?
-        boundingRectB.y + boundingRectB.height >=
-          boundingRectA.y + boundingRectA.height; // is A's height <= than B's?
+        const aIsInB =
+          boundingRectB.x <= boundingRectA.x &&
+          boundingRectB.y <= boundingRectA.y &&
+          boundingRectB.x + boundingRectB.width >= boundingRectA.x + boundingRectA.width &&
+          boundingRectB.y + boundingRectB.height >= boundingRectA.y + boundingRectA.height;
 
-      if (aIsInB &&  i !== j) {
-        // B is within A
-        aWasNestedAtLeastOnce = true;
-      } else {
-        // noop
+        if (aIsInB) {
+          aWasNestedAtLeastOnce = true;
+          break;
+        }
       }
     }
-    if (!aWasNestedAtLeastOnce && boundingRectA.width * boundingRectA.height > 1000) {
+
+    if (!aWasNestedAtLeastOnce) {
       console.log("a", boundingRectA)
       filteredContours.add(contoursArray[i]);
     }
