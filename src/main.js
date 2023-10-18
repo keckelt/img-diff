@@ -1,8 +1,12 @@
 import "./style.css";
+// import a from "/swarm1.png";
+// import b from "/swarm2.png";
 import a from "./A.png";
 import b from "./B.png";
 
 // inspired by https://github.com/kostasthanos/Spot-The-Differences
+
+let score = undefined;
 
 async function yolo() {
   // load a into canvas #a
@@ -55,8 +59,17 @@ async function yolo() {
   );
   const compareImg = cv.matFromImageData(compareImageData);
 
-  orbScore(baseImg, compareImg);
+  if(score === undefined) {
+    score = orbScore(baseImg, compareImg);
 
+    // show score in #score
+    const scoreElem = document.getElementById("score");
+    if (scoreElem !== null) {
+      // format to 3 floating points
+      scoreElem.innerText = score.toFixed(3);
+    }
+  }
+  
   const addedContours = getDiffContours(baseImg, compareImg);
   const removedContours = getDiffContours(compareImg, baseImg);
 
@@ -387,17 +400,12 @@ function orbScore(baseImg, compareImg) {
   matchScore /= matches.size();
   const descriptorBits = 32 * 8; // see https://docs.opencv.org/4.8.0/db/d95/classcv_1_1ORB.html#ac166094ca013f59bfe3df3b86fa40bfe
   matchScore /= descriptorBits; // normalize
-  console.log("matchScore", matchScore);
-  // show score in #score
-  const score = document.getElementById("score");
-  if (score !== null) {
-    // format to 3 floating points
-    score.innerText = matchScore.toFixed(3);
-  }
 
   baseKeypoints.delete();
   compareKeypoints.delete();
   baseDescriptors.delete();
   compareDescriptors.delete();
   matches.delete();
+
+  return matchScore;
 }
