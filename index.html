@@ -16,7 +16,7 @@
 
       <div>
         <div style="display: flex; flex-direction: row; align-items: center">
-          <h1>4. Highlighted Diff</h1>
+          <h1>4. Diff</h1>
           <div>
             ORB Distance:&nbsp;<span id="score">&hellip;</span>&nbsp;(&isin;
             [0,1])
@@ -37,7 +37,7 @@
               &nbsp;Ref
             </label>
             <div style="display: flex">
-              Contour:&nbsp;
+              Change Area:&nbsp;
               <label>
                 <input
                   type="radio"
@@ -50,6 +50,9 @@
               <label>
                 <input type="radio" name="contourType" value="hull" /> Convex
                 Hull
+              </label>
+              <label>
+                <input type="radio" name="contourType" value="pixels" /> Invidual Pixels
               </label>
             </div>
           </div>
@@ -75,7 +78,7 @@
           Iteration:&nbsp;
           <input
             type="number"
-            value="3"
+            value="2"
             min="0"
             max="10"
             step="1"
@@ -93,7 +96,7 @@
           Iteration:&nbsp;
           <input
             type="number"
-            value="0"
+            value="1"
             min="0"
             max="10"
             step="1"
