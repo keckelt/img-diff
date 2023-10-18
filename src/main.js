@@ -69,7 +69,7 @@ async function yolo() {
       scoreElem.innerText = score.toFixed(3);
     }
   }
-  
+
   const addedContours = getDiffContours(baseImg, compareImg);
   const removedContours = getDiffContours(compareImg, baseImg);
 
@@ -80,7 +80,7 @@ async function yolo() {
 
     const thickness = 2;
     const contourDrawOpacity = 255; // draw contour fully opaque because it would set the pixels' opacity and not make the contour itself transparent
-    let overlayWeight = 0.75; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
+    let diffOverlayWeight = 0.33; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
     const rectangle =
       document.querySelector('input[name="contourType"]:checked').value ===
       "rectangle";
@@ -100,9 +100,9 @@ async function yolo() {
           cv.rectangle(overlay, pt1, pt2, color, thickness); // scaler = color in RGB-Opacity format
           cv.addWeighted(
             overlay,
-            overlayWeight,
+            diffOverlayWeight,
             compareImg,
-            1 - overlayWeight,
+            1 - diffOverlayWeight,
             0,
             compareImg,
             -1,
@@ -120,9 +120,9 @@ async function yolo() {
           cv.drawContours(overlay, hulls, 0, color, thickness, lineType);
           cv.addWeighted(
             overlay,
-            overlayWeight,
+            diffOverlayWeight,
             compareImg,
-            1 - overlayWeight,
+            1 - diffOverlayWeight,
             0,
             compareImg,
             -1,
@@ -144,9 +144,9 @@ async function yolo() {
           cv.rectangle(overlay, pt1, pt2, color, thickness); // scaler = color in RGB-Opacity format
           cv.addWeighted(
             overlay,
-            overlayWeight,
+            diffOverlayWeight,
             baseImg,
-            1 - overlayWeight,
+            1 - diffOverlayWeight,
             0,
             baseImg,
             -1,
@@ -164,9 +164,9 @@ async function yolo() {
           cv.drawContours(overlay, hulls, 0, color, thickness, lineType);
           cv.addWeighted(
             overlay,
-            overlayWeight,
+            diffOverlayWeight,
             baseImg,
-            1 - overlayWeight,
+            1 - diffOverlayWeight,
             0,
             baseImg,
             -1,
@@ -350,25 +350,26 @@ function getDiffContours(compareImg, baseImg) {
   for (let i = 0; i < contoursArray.length; i++) {
     const boundingRectA = cv.boundingRect(contoursArray[i]);
     let aWasNestedAtLeastOnce = false;
-    for (let j = i + 1; j < contoursArray.length; j++) {
+    for (let j = 0; j < contoursArray.length; j++) {
       const boundingRectB = cv.boundingRect(contoursArray[j]);
 
       const aIsInB =
         boundingRectB.x <= boundingRectA.x &&
-        boundingRectB.y <= boundingRectA.y && // is A's top left corner inside B?
+        boundingRectB.y <= boundingRectA.y && // is A's top left corner inside B or is it the same point?
         boundingRectB.x + boundingRectB.width >=
-          boundingRectA.x + boundingRectA.width && // is A's width smaller than B's?
+          boundingRectA.x + boundingRectA.width && // is A's width <= than B's?
         boundingRectB.y + boundingRectB.height >=
-          boundingRectA.y + boundingRectA.height; // is A's height smaller than B's?
+          boundingRectA.y + boundingRectA.height; // is A's height <= than B's?
 
-      if (aIsInB) {
+      if (aIsInB &&  i !== j) {
         // B is within A
         aWasNestedAtLeastOnce = true;
       } else {
         // noop
       }
     }
-    if (!aWasNestedAtLeastOnce) {
+    if (!aWasNestedAtLeastOnce && boundingRectA.width * boundingRectA.height > 1000) {
+      console.log("a", boundingRectA)
       filteredContours.add(contoursArray[i]);
     }
   }
