@@ -99,7 +99,7 @@ async function yolo() {
 
   const thickness = -1; // -1 = filled, 1 = 1px thick, 2 = 2px thick, ...
   const contourDrawOpacity = 255; // draw contour fully opaque because it would set the pixels' opacity and not make the contour itself transparent
-  let diffOverlayWeight = 0.5; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
+  let diffOverlayWeight = 0.66; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
   const colorAdd = new cv.Scalar(102, 194, 165, contourDrawOpacity);
   const colorRemove = new cv.Scalar(240, 82, 104, contourDrawOpacity);
 
@@ -252,7 +252,7 @@ function getDiff(compareImg, baseImg, calcContours) {
   const grayImg = new cv.Mat();
   cv.cvtColor(diffImg, grayImg, cv.COLOR_BGR2GRAY);
 
-  const th = 1;
+  const th = 26;
   const imask = new cv.Mat();
   cv.threshold(grayImg, imask, th, 255, cv.THRESH_BINARY);
   cv.imshow("mask", imask);
