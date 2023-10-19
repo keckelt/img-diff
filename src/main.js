@@ -252,7 +252,7 @@ function getDiff(compareImg, baseImg, calcContours) {
   const grayImg = new cv.Mat();
   cv.cvtColor(diffImg, grayImg, cv.COLOR_BGR2GRAY);
 
-  const th = 26;
+  const th = 26; // up to 10% (26/255) difference is tolerated
   const imask = new cv.Mat();
   cv.threshold(grayImg, imask, th, 255, cv.THRESH_BINARY);
   cv.imshow("mask", imask);
