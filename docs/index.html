@@ -5,11 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="./opencv.js" type="text/javascript"></script>
     <title>Img Diff</title>
-    <script type="module" crossorigin src="./assets/index-fba3485e.js"></script>
-    <link rel="stylesheet" href="./assets/index-45ded6f3.css">
+    <script type="module" crossorigin src="./assets/index-6231e10a.js"></script>
+    <link rel="stylesheet" href="./assets/index-39abbdc5.css">
   </head>
 
   <body>
+    <div class="imggroup" style="font-size: 1.5em;">
+      Image Pairs:&nbsp;
+
+      
+      <label>
+        <input
+          type="radio"
+          name="imageset"
+          value="legend"
+          checked
+        />
+        Legend+Axis Change
+      </label>
+      <label>
+        <input type="radio" name="imageset" value="size" /> Mark Size Decrease
+      </label>
+      <label>
+        <input type="radio" name="imageset" value="newData" /> New Points
+      </label>
+      <label>
+        <input type="radio" name="imageset" value="bear" /> Bears 🐻
+      </label>
+
+
+    </div>
     <div class="imggroup">
       <div>
         <h1>Base Image</h1>
@@ -18,7 +43,7 @@
 
       <div>
         <div style="display: flex; flex-direction: row; align-items: center">
-          <h1>4. Highlighted Diff</h1>
+          <h1>4. Diff</h1>
           <div>
             ORB Distance:&nbsp;<span id="score">&hellip;</span>&nbsp;(&isin;
             [0,1])
@@ -26,21 +51,42 @@
             Max Contour Area:&nbsp;
             <input type="number" value="1000" min="0" max="10000" step="100" id="contourArea">
           </label> -->
-            <label>
-              Base:&nbsp;
-              <input
-                type="range"
-                value="0"
-                min="-0.5"
-                max="0.5"
-                step="0.1"
-                id="transparency"
-              />
-              &nbsp;Ref
-            </label>
+          <div style="font-size: 0.75em;">
+              <label>
+                Base:&nbsp;
+                <input
+                  type="range"
+                  value="0"
+                  min="-0.5"
+                  max="0.5"
+                  step="0.125"
+                  id="transparency"
+                />
+                &nbsp;Ref
+              </label>
+              <div style="display: flex">
+                Change Area:&nbsp;
+                <label>
+                  <input
+                    type="radio"
+                    name="contourType"
+                    value="rectangle"
+                  />
+                  Rectangle
+                </label>
+                <label>
+                  <input type="radio" name="contourType" value="hull" /> Convex
+                  Hull
+                </label>
+                <label>
+                  <input type="radio" name="contourType" value="pixels" checked/> Invidual Pixels
+                </label>
+              </div>
+          </div>
           </div>
         </div>
         <canvas id="diff"></canvas>
+        <div id="summary"></div>
       </div>
 
       <div>
@@ -51,17 +97,17 @@
 
     <div class="imggroup">
       <div>
-        <h1>1. Get Diff Mask</h1>
+        <h1>1. Get Diff Mask (Compare)</h1>
         <canvas id="mask"></canvas>
       </div>
 
       <div>
         <label>
           <h1>2. Dilate Diff</h1>
-          Iteration:&nbsp;
+          Iterations:&nbsp;
           <input
             type="number"
-            value="3"
+            value="2"
             min="0"
             max="10"
             step="1"
@@ -76,10 +122,10 @@
       <div>
         <label>
           <h1>3. Erode Diff</h1>
-          Iteration:&nbsp;
+          Iterations:&nbsp;
           <input
             type="number"
-            value="0"
+            value="1"
             min="0"
             max="10"
             step="1"
