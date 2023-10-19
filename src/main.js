@@ -92,8 +92,8 @@ async function yolo() {
 
   const isDiffWithContours = changeArea !== "pixels";
 
-  const diffRemoved = getDiff(compareImg, baseImg, isDiffWithContours);
-  const diffAdded = getDiff(baseImg, compareImg, isDiffWithContours);
+  const diffAdded = getDiff(baseImg, compareImg, true);
+  const diffRemoved = getDiff(compareImg, baseImg, true);
 
   const contourAreaInput = document.getElementById("contourArea");
 
@@ -144,6 +144,8 @@ async function yolo() {
   );
 
   cv.imshow("diff", diffImg);
+
+  document.getElementById("summary").innerText = `${diffRemoved.contours.length} removed and ${diffAdded.contours.length} added regions.`;
 
   baseImg.delete();
   compareImg.delete();
@@ -244,7 +246,7 @@ function pixelDiff(target, mask, diffOverlayWeight, color) {
   );
 }
 
-function getDiff(compareImg, baseImg, calcContours = True) {
+function getDiff(compareImg, baseImg, calcContours) {
   let diffImg = new cv.Mat();
   cv.subtract(compareImg, baseImg, diffImg);
   const grayImg = new cv.Mat();
@@ -355,7 +357,7 @@ function getDiff(compareImg, baseImg, calcContours = True) {
   contours.delete();
   return {
     img: erode,
-    contours: filteredContours,
+    contours: Array.from(filteredContours),
   };
 }
 
