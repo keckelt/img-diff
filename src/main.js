@@ -1,18 +1,38 @@
 import "./style.css";
-import a from "/swarm1.png";
-import b from "/swarm2.png";
-// import a from "./A.png";
-// import b from "./B.png";
+import size1 from "/size1.png";
+import size2 from "/size2.png";
+import legend1 from "/legend1.png";
+import legend2 from "/legend2.png";
+import newData1 from "/newData1.png";
+import newData2 from "/newData2.png";
+import bear1 from "/bear1.png";
+import bear2 from "/bear2.png";
 
 // inspired by https://github.com/kostasthanos/Spot-The-Differences
 
 let score = undefined;
 
 async function yolo() {
+  const imageSet = document.querySelector('input[name="imageset"]:checked')?.value ?? 'legend';
+  console.log('imageSet');
+
+  let oldImgInput = legend1;
+  let newImageInput = legend2;
+  if ( imageSet === 'size') {
+    oldImgInput = size1;
+    newImageInput = size2;
+  } else if (imageSet === 'newData'){
+    oldImgInput = newData1;
+    newImageInput= newData2;
+  } else if (imageSet === 'bear'){
+    oldImgInput = bear1;
+    newImageInput= bear2;
+  }
+
   // load a into canvas #a
   const canvasA = document.getElementById("a");
   const imgA = new Image();
-  imgA.src = a;
+  imgA.src = oldImgInput;
   await imgA.decode();
 
   // canvas size based on base image, as this is the what is displayed (+ highlights from the compareImg)
@@ -29,7 +49,7 @@ async function yolo() {
   // load a into canvas #a
   const canvasB = document.getElementById("b");
   const imgB = new Image();
-  imgB.src = b;
+  imgB.src = newImageInput;
   await imgB.decode();
 
   // canvas size based on base image, as this is the what is displayed (+ highlights from the compareImg)
@@ -68,9 +88,7 @@ async function yolo() {
       scoreElem.innerText = score.toFixed(3);
     }
   }
-  const changeArea = document.querySelector(
-    'input[name="contourType"]:checked',
-  ).value;
+  const changeArea = document.querySelector('input[name="contourType"]:checked').value;
 
   const isDiffWithContours = changeArea !== "pixels";
 
@@ -81,7 +99,7 @@ async function yolo() {
 
   const thickness = -1; // -1 = filled, 1 = 1px thick, 2 = 2px thick, ...
   const contourDrawOpacity = 255; // draw contour fully opaque because it would set the pixels' opacity and not make the contour itself transparent
-  let diffOverlayWeight = 0.93; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
+  let diffOverlayWeight = 0.5; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
   const colorAdd = new cv.Scalar(102, 194, 165, contourDrawOpacity);
   const colorRemove = new cv.Scalar(240, 82, 104, contourDrawOpacity);
 
@@ -175,9 +193,16 @@ let timeoutId;
   document.getElementById("transparency"),
   document.getElementById("transparency"),
   ...document.querySelectorAll(`input[name="contourType"]`),
+  ...document.querySelectorAll(`input[name="imageset"]`),
 ].forEach((slider) => {
   if (slider !== null) {
-    slider.addEventListener("input", () => {
+    slider.addEventListener("input", (event) => {
+      //clear score variable if imageset input fired the event
+      if (event.target.name === 'imageset') {
+        score = undefined;
+      }
+
+
       if (timeoutId !== undefined) {
         clearTimeout(timeoutId);
       }

@@ -8,6 +8,31 @@
   </head>
 
   <body>
+    <div class="imggroup" style="font-size: 1.5em;">
+      Image Pairs:&nbsp;
+
+      
+      <label>
+        <input
+          type="radio"
+          name="imageset"
+          value="legend"
+          checked
+        />
+        Legend+Axis Change
+      </label>
+      <label>
+        <input type="radio" name="imageset" value="size" /> Mark Size Decrease
+      </label>
+      <label>
+        <input type="radio" name="imageset" value="newData" /> New Points
+      </label>
+      <label>
+        <input type="radio" name="imageset" value="bear" /> Bears 🐻 (12 Differences)
+      </label>
+
+
+    </div>
     <div class="imggroup">
       <div>
         <h1>Base Image</h1>
@@ -24,37 +49,38 @@
             Max Contour Area:&nbsp;
             <input type="number" value="1000" min="0" max="10000" step="100" id="contourArea">
           </label> -->
-            <label>
-              Base:&nbsp;
-              <input
-                type="range"
-                value="0"
-                min="-0.5"
-                max="0.5"
-                step="0.125"
-                id="transparency"
-              />
-              &nbsp;Ref
-            </label>
-            <div style="display: flex">
-              Change Area:&nbsp;
+          <div style="font-size: 0.75em;">
               <label>
+                Base:&nbsp;
                 <input
-                  type="radio"
-                  name="contourType"
-                  value="rectangle"
-                  checked
+                  type="range"
+                  value="0"
+                  min="-0.5"
+                  max="0.5"
+                  step="0.125"
+                  id="transparency"
                 />
-                Rectangle
+                &nbsp;Ref
               </label>
-              <label>
-                <input type="radio" name="contourType" value="hull" /> Convex
-                Hull
-              </label>
-              <label>
-                <input type="radio" name="contourType" value="pixels" /> Invidual Pixels
-              </label>
-            </div>
+              <div style="display: flex">
+                Change Area:&nbsp;
+                <label>
+                  <input
+                    type="radio"
+                    name="contourType"
+                    value="rectangle"
+                  />
+                  Rectangle
+                </label>
+                <label>
+                  <input type="radio" name="contourType" value="hull" /> Convex
+                  Hull
+                </label>
+                <label>
+                  <input type="radio" name="contourType" value="pixels" checked/> Invidual Pixels
+                </label>
+              </div>
+          </div>
           </div>
         </div>
         <canvas id="diff"></canvas>
