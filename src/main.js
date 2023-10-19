@@ -1,8 +1,8 @@
 import "./style.css";
-// import a from "/swarm1.png";
-// import b from "/swarm2.png";
-import a from "./A.png";
-import b from "./B.png";
+import a from "/swarm1.png";
+import b from "/swarm2.png";
+// import a from "./A.png";
+// import b from "./B.png";
 
 // inspired by https://github.com/kostasthanos/Spot-The-Differences
 
@@ -24,8 +24,6 @@ async function yolo() {
     return;
   }
 
-  // ctx.fillStyle = 'white';
-  // ctx.fillRect(0, 0, canvasA.width, canvasA.height);
   ctx.drawImage(imgA, 0, 0);
 
   // load a into canvas #a
@@ -60,6 +58,7 @@ async function yolo() {
   const compareImg = cv.matFromImageData(compareImageData);
 
   if (score === undefined) {
+    // compute the score only once
     score = orbScore(baseImg, compareImg);
 
     // show score in #score
@@ -69,201 +68,68 @@ async function yolo() {
       scoreElem.innerText = score.toFixed(3);
     }
   }
+  const changeArea = document.querySelector(
+    'input[name="contourType"]:checked',
+  ).value;
 
-  const diffAdded = getDiff(baseImg, compareImg);
-  const diffRemoved = getDiff(compareImg, baseImg);
+  const isDiffWithContours = changeArea !== "pixels";
 
-  try {
-    const contourAreaInput = document.getElementById("contourArea");
-    const maxArea =
-      contourAreaInput != null ? parseInt(contourAreaInput.value) : Infinity;
+  const diffRemoved = getDiff(compareImg, baseImg, isDiffWithContours);
+  const diffAdded = getDiff(baseImg, compareImg, isDiffWithContours);
 
-    const thickness = -1;
-    const contourDrawOpacity = 255; // draw contour fully opaque because it would set the pixels' opacity and not make the contour itself transparent
-    let diffOverlayWeight = 0.33; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
-    const changeArea = document.querySelector(
-      'input[name="contourType"]:checked',
-    ).value;
-    // draw added contours on compareImage
-    for (const diff of diffAdded) {
-      const contour = diff.contour;
-      if (cv.contourArea(contour) < maxArea) {
-        // see if rectangle radio button is checked
-        let color = new cv.Scalar(102, 194, 165, contourDrawOpacity);
+  const contourAreaInput = document.getElementById("contourArea");
 
-        // draw contours as rectangle or convex hull. see https://docs.opencv.org/3.4/dd/d49/tutorial_py_contour_features.html
-        if (changeArea === "rectangle") {
-          const rect = cv.boundingRect(contour);
-          const pt1 = new cv.Point(rect.x, rect.y);
-          const pt2 = new cv.Point(rect.x + rect.width, rect.y + rect.height);
+  const thickness = -1; // -1 = filled, 1 = 1px thick, 2 = 2px thick, ...
+  const contourDrawOpacity = 255; // draw contour fully opaque because it would set the pixels' opacity and not make the contour itself transparent
+  let diffOverlayWeight = 0.93; // instead, draw contours on a copy of the image and blend it with the original image to achieve a transparency effect
+  const colorAdd = new cv.Scalar(102, 194, 165, contourDrawOpacity);
+  const colorRemove = new cv.Scalar(240, 82, 104, contourDrawOpacity);
 
-          let overlay = compareImg.clone();
-          cv.rectangle(overlay, pt1, pt2, color, thickness); // scaler = color in RGB-Opacity format
-          cv.addWeighted(
-            overlay,
-            diffOverlayWeight,
-            compareImg,
-            1 - diffOverlayWeight,
-            0,
-            compareImg,
-            -1,
-          );
-        } else if (changeArea === "hull") {
-          let hull = new cv.Mat();
-          cv.convexHull(contour, hull, false, true);
+  if (changeArea === "pixels") {
+    pixelDiff(compareImg, diffAdded.img, diffOverlayWeight, colorAdd);
+    pixelDiff(baseImg, diffRemoved.img, diffOverlayWeight, colorRemove);
 
-          // Draw the convex hull
-          let lineType = cv.LINE_8;
-          const hulls = new cv.MatVector();
-          hulls.push_back(hull);
-
-          let overlay = compareImg.clone();
-          cv.drawContours(overlay, hulls, 0, color, thickness, lineType);
-          cv.addWeighted(
-            overlay,
-            diffOverlayWeight,
-            compareImg,
-            1 - diffOverlayWeight,
-            0,
-            compareImg,
-            -1,
-          );
-        } else if (changeArea === "pixels") {
-          const mask = diff.img;
-          let overlay = compareImg.clone();
-
-          const maskData = mask.data;
-          for (let i = 0; i < maskData.length; i += 1) {
-            const rgbaIndex = i*4;
-            if (
-              maskData[i] !== 0 // mask is black
-              //  && 
-              // //overlay is white
-              // overlay.data[rgbaIndex] === 255 &&
-              // overlay.data[rgbaIndex + 1] === 255 &&
-              // overlay.data[rgbaIndex + 2] === 255
-            ) {
-              overlay.data[rgbaIndex] = color[0];
-              overlay.data[rgbaIndex + 1] = color[1];
-              overlay.data[rgbaIndex + 2] = color[2];
-            }
-          }
-          console.log('overlayWeight', diffOverlayWeight)
-          cv.addWeighted(
-            overlay,
-            diffOverlayWeight,
-            compareImg,
-            1 - diffOverlayWeight,
-            0,
-            compareImg,
-            -1,
-          );
-          break;
-        }
-      }
-    }
-
-    // draw removed contours on base Image
-    for (const diff of diffRemoved) {
-      const contour = diff.contour;
-      if (cv.contourArea(contour) < maxArea) {
-        let color = new cv.Scalar(240, 82, 104, contourDrawOpacity);
-        if (changeArea === "rectangle") {
-          const rect = cv.boundingRect(contour);
-          const pt1 = new cv.Point(rect.x, rect.y);
-          const pt2 = new cv.Point(rect.x + rect.width, rect.y + rect.height);
-
-          let overlay = baseImg.clone();
-          cv.rectangle(overlay, pt1, pt2, color, thickness); // scaler = color in RGB-Opacity format
-          cv.addWeighted(
-            overlay,
-            diffOverlayWeight,
-            baseImg,
-            1 - diffOverlayWeight,
-            0,
-            baseImg,
-            -1,
-          );
-        } else if (changeArea === "hull") {
-          let hull = new cv.Mat();
-          cv.convexHull(contour, hull, false, true);
-
-          // Draw the convex hull
-          let lineType = cv.LINE_8;
-          const hulls = new cv.MatVector();
-          hulls.push_back(hull);
-
-          let overlay = baseImg.clone();
-          cv.drawContours(overlay, hulls, 0, color, thickness, lineType);
-          cv.addWeighted(
-            overlay,
-            diffOverlayWeight,
-            baseImg,
-            1 - diffOverlayWeight,
-            0,
-            baseImg,
-            -1,
-          );
-        } else if (changeArea === "pixels") {
-          const mask = diff.img;
-          let overlay = baseImg.clone();
-
-          const maskData = mask.data;
-          for (let i = 0; i < maskData.length; i += 1) {
-            const rgbaIndex = i*4;
-            if (
-              maskData[i] !== 0 // mask is black
-              //  && 
-              // //overlay is white
-              // overlay.data[rgbaIndex] === 255 &&
-              // overlay.data[rgbaIndex + 1] === 255 &&
-              // overlay.data[rgbaIndex + 2] === 255
-            ) {
-              overlay.data[rgbaIndex] = color[0];
-              overlay.data[rgbaIndex + 1] = color[1];
-              overlay.data[rgbaIndex + 2] = color[2];
-              overlay.data[rgbaIndex + 3] = color[3];
-
-              // console.log('overlayData', overlay.data[rgbaIndex], overlay.data[rgbaIndex + 1], overlay.data[rgbaIndex + 2], overlay.data[rgbaIndex + 3])
-              // console.log('baseImg', baseImg.data[rgbaIndex], baseImg.data[rgbaIndex + 1], baseImg.data[rgbaIndex + 2], baseImg.data[rgbaIndex + 3])
-            }
-          }
-          cv.addWeighted(
-            baseImg,
-            0.5,
-            overlay,
-            0.5,
-            0,
-            baseImg,
-            -1,
-          );
-          break;
-        }
-      }
-    }
-
-    // merge the images
-    const transparencySlider = document.getElementById("transparency");
-    const transparency =
-      transparencySlider != null ? parseFloat(transparencySlider.value) : 0;
-
-    let diffImg = new cv.Mat();
-    cv.addWeighted(
+    diffAdded.img.delete();
+    diffRemoved.img.delete();
+  } else {
+    drawContours(
       compareImg,
-      0.5 + transparency,
-      baseImg,
-      0.5 - transparency,
-      0,
-      diffImg
+      diffAdded.contours,
+      colorAdd,
+      thickness,
+      diffOverlayWeight,
+      changeArea,
     );
-
-    cv.imshow("diff", diffImg);
-  } catch (e) {
-    console.error(e);
+    drawContours(
+      baseImg,
+      diffRemoved.contours,
+      colorRemove,
+      thickness,
+      diffOverlayWeight,
+      changeArea,
+    );
   }
+
+  // merge the images
+  const transparencySlider = document.getElementById("transparency");
+  const transparency =
+    transparencySlider != null ? parseFloat(transparencySlider.value) : 0;
+
+  let diffImg = new cv.Mat();
+  cv.addWeighted(
+    compareImg,
+    0.5 + transparency,
+    baseImg,
+    0.5 - transparency,
+    0,
+    diffImg,
+  );
+
+  cv.imshow("diff", diffImg);
 
   baseImg.delete();
   compareImg.delete();
+  diffImg.delete();
 }
 
 if (cv.getBuildInformation) {
@@ -322,9 +188,39 @@ let timeoutId;
     });
   }
 });
-function getDiff(compareImg, baseImg) {
+
+function pixelDiff(target, mask, diffOverlayWeight, color) {
+  let overlay = target.clone();
+
+  const maskData = mask.data;
+  for (let i = 0; i < maskData.length; i += 1) {
+    const rgbaIndex = i * 4;
+    if (
+      maskData[i] !== 0 // mask is black
+      //  &&
+      // //overlay is white
+      // overlay.data[rgbaIndex] === 255 &&
+      // overlay.data[rgbaIndex + 1] === 255 &&
+      // overlay.data[rgbaIndex + 2] === 255
+    ) {
+      overlay.data[rgbaIndex] = color[0];
+      overlay.data[rgbaIndex + 1] = color[1];
+      overlay.data[rgbaIndex + 2] = color[2];
+    }
+  }
+  cv.addWeighted(
+    overlay,
+    diffOverlayWeight,
+    target,
+    1 - diffOverlayWeight,
+    0,
+    target,
+    -1,
+  );
+}
+
+function getDiff(compareImg, baseImg, calcContours = True) {
   let diffImg = new cv.Mat();
-  // cv.absdiff(compareImg, baseImg, diffImg);
   cv.subtract(compareImg, baseImg, diffImg);
   const grayImg = new cv.Mat();
   cv.cvtColor(diffImg, grayImg, cv.COLOR_BGR2GRAY);
@@ -365,6 +261,19 @@ function getDiff(compareImg, baseImg) {
   );
   cv.imshow("erode", erode);
 
+  diffImg.delete();
+  grayImg.delete();
+  imask.delete();
+  kernel.delete();
+  dilate.delete();
+
+  if (!calcContours) {
+    return {
+      img: erode,
+      contours: [],
+    };
+  }
+
   const contours = new cv.MatVector();
   const hierarchy = new cv.Mat();
   // RETR_EXTERNAL ... returns only extreme outer flags. All child contours are left behind. see https://docs.opencv.org/4.x/d9/d8b/tutorial_py_contours_hierarchy.html
@@ -375,22 +284,18 @@ function getDiff(compareImg, baseImg) {
     cv.RETR_EXTERNAL,
     cv.CHAIN_APPROX_SIMPLE,
   );
-  const diffArray = [];
+
+  hierarchy.delete();
+
+  const boundingRects = [];
   for (let i = 0; i < contours.size(); i++) {
-    diffArray.push({
-      img: erode,
-      contour: contours.get(i),
-    });
+    const contour = contours.get(i);
+    // Calculate bounding rectangles for all contours
+    boundingRects.push(cv.boundingRect(contour));
   }
 
-  // return contoursArray;
-
   // Filter out contours that are within others
-  const filteredDiffs = new Set();
-  // Calculate bounding rectangles for all contours
-  const boundingRects = diffArray.map(({ contour }) =>
-    cv.boundingRect(contour),
-  );
+  const filteredContours = new Set();
 
   for (let i = 0; i < boundingRects.length; i++) {
     const boundingRectA = boundingRects[i];
@@ -416,11 +321,17 @@ function getDiff(compareImg, baseImg) {
     }
 
     if (!aWasNestedAtLeastOnce) {
-      filteredDiffs.add(diffArray[i]);
+      filteredContours.add(contours.get(i));
+    } else {
+      contours.get(i).delete();
     }
   }
 
-  return filteredDiffs;
+  contours.delete();
+  return {
+    img: erode,
+    contours: filteredContours,
+  };
 }
 
 function orbScore(baseImg, compareImg) {
@@ -429,13 +340,9 @@ function orbScore(baseImg, compareImg) {
   const compareKeypoints = new cv.KeyPointVector();
   const baseDescriptors = new cv.Mat();
   const compareDescriptors = new cv.Mat();
-  orb.detectAndCompute(baseImg, new cv.Mat(), baseKeypoints, baseDescriptors);
-  orb.detectAndCompute(
-    compareImg,
-    new cv.Mat(),
-    compareKeypoints,
-    compareDescriptors,
-  );
+  const mask = new cv.Mat();
+  orb.detectAndCompute(baseImg, mask, baseKeypoints, baseDescriptors);
+  orb.detectAndCompute(compareImg, mask, compareKeypoints, compareDescriptors);
 
   const bfMatcher = new cv.BFMatcher(cv.NORM_HAMMING, true);
   const matches = new cv.DMatchVector();
@@ -448,11 +355,63 @@ function orbScore(baseImg, compareImg) {
   const descriptorBits = 32 * 8; // see https://docs.opencv.org/4.8.0/db/d95/classcv_1_1ORB.html#ac166094ca013f59bfe3df3b86fa40bfe
   matchScore /= descriptorBits; // normalize
 
+  orb.delete();
   baseKeypoints.delete();
   compareKeypoints.delete();
   baseDescriptors.delete();
   compareDescriptors.delete();
+  mask.delete();
+
+  bfMatcher.delete();
   matches.delete();
 
   return matchScore;
+}
+
+function drawContours(
+  target,
+  contours,
+  color,
+  thickness,
+  diffOverlayWeight,
+  type,
+) {
+  // draw added contours on compareImage
+  let overlay = target.clone();
+  for (const contour of contours) {
+    // draw contours as rectangle or convex hull. see https://docs.opencv.org/3.4/dd/d49/tutorial_py_contour_features.html
+    if (type === "rectangle") {
+      const rect = cv.boundingRect(contour);
+      const pt1 = new cv.Point(rect.x, rect.y);
+      const pt2 = new cv.Point(rect.x + rect.width, rect.y + rect.height);
+
+      cv.rectangle(overlay, pt1, pt2, color, thickness); // scaler = color in RGB-Opacity format
+    } else if (type === "hull") {
+      let hull = new cv.Mat();
+      cv.convexHull(contour, hull, false, true);
+
+      // Draw the convex hull
+      let lineType = cv.LINE_8;
+      const hulls = new cv.MatVector();
+      hulls.push_back(hull);
+
+      cv.drawContours(overlay, hulls, 0, color, thickness, lineType); // this could be done for all contours at once, by putting them into a MatVector
+      hulls.delete();
+    } else {
+      throw new Error(`Unknown contour type ${type}`);
+    }
+
+    contour.delete();
+  }
+
+  cv.addWeighted(
+    overlay,
+    diffOverlayWeight,
+    target,
+    1 - diffOverlayWeight,
+    0,
+    target,
+    -1,
+  );
+  overlay.delete();
 }
