@@ -103,9 +103,17 @@ async function yolo() {
   const colorAdd = new cv.Scalar(102, 194, 165, contourDrawOpacity);
   const colorRemove = new cv.Scalar(240, 82, 104, contourDrawOpacity);
 
+  
+  cv.cvtColor(compareImg, compareImg, cv.COLOR_BGR2GRAY);
+  cv.cvtColor(compareImg, compareImg, cv.COLOR_GRAY2BGRA);
+
+  
+  cv.cvtColor(baseImg, baseImg, cv.COLOR_BGR2GRAY);
+  cv.cvtColor(baseImg, baseImg, cv.COLOR_GRAY2BGRA);
+
   if (changeArea === "pixels") {
-    pixelDiff(compareImg, diffAdded.img, diffOverlayWeight, colorAdd);
-    pixelDiff(baseImg, diffRemoved.img, diffOverlayWeight, colorRemove);
+    pixelDiff(baseImg, diffRemoved.img, diffAdded.img, diffOverlayWeight, colorRemove);
+    pixelDiff(compareImg, diffAdded.img, diffRemoved.img, diffOverlayWeight, colorAdd);
 
     diffAdded.img.delete();
     diffRemoved.img.delete();
@@ -216,7 +224,7 @@ let timeoutId;
   }
 });
 
-function pixelDiff(target, mask, diffOverlayWeight, color) {
+function pixelDiff(target, mask, mask2, diffOverlayWeight, color) {
   let overlay = target.clone();
 
   const maskData = mask.data;
@@ -224,6 +232,7 @@ function pixelDiff(target, mask, diffOverlayWeight, color) {
     const rgbaIndex = i * 4;
     if (
       maskData[i] !== 0 // mask is black
+      && mask2.data[i] === 0 // mask2 is black
       //  &&
       // //overlay is white
       // overlay.data[rgbaIndex] === 255 &&
@@ -233,6 +242,13 @@ function pixelDiff(target, mask, diffOverlayWeight, color) {
       overlay.data[rgbaIndex] = color[0];
       overlay.data[rgbaIndex + 1] = color[1];
       overlay.data[rgbaIndex + 2] = color[2];
+    } else if (
+      maskData[i] !== 0 // mask is black
+      && mask2.data[i] !== 0 // mask2 is black
+    ) {
+      overlay.data[rgbaIndex] = 251;
+      overlay.data[rgbaIndex + 1] = 225;
+      overlay.data[rgbaIndex + 2] = 86;
     }
   }
   cv.addWeighted(
@@ -248,16 +264,16 @@ function pixelDiff(target, mask, diffOverlayWeight, color) {
 
 function getDiff(compareImg, baseImg, calcContours) {
   let diffImg = new cv.Mat();
-  cv.subtract(compareImg, baseImg, diffImg);
+  cv.absdiff(compareImg, baseImg, diffImg);
   const grayImg = new cv.Mat();
   cv.cvtColor(diffImg, grayImg, cv.COLOR_BGR2GRAY);
 
-  const th = 26; // up to 10% (26/255) difference is tolerated
+  const th = 0;
   const imask = new cv.Mat();
   cv.threshold(grayImg, imask, th, 255, cv.THRESH_BINARY);
   cv.imshow("mask", imask);
 
-  const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
+  const kernel = cv.Mat.ones(9, 9, cv.CV_8U);
   const dilate = new cv.Mat();
   // get iterations from slider #dilateIterations
   let slider = document.getElementById("dilateIterations");
