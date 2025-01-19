@@ -46,6 +46,10 @@ async function yolo() {
 
   ctx.drawImage(imgA, 0, 0);
 
+  
+  const bgColor = getBackgroundColor(ctx, imgA.width, imgA.height, 50);
+  console.log('bgColor', bgColor);
+
   // load a into canvas #a
   const canvasB = document.getElementById("b");
   const imgB = new Image();
@@ -61,8 +65,8 @@ async function yolo() {
     return;
   }
 
-  // fill with white first  in case it is smaller
-  ctxB.fillStyle = "white";
+  // fill with backgroundColor first  in case this image is smaller
+  ctxB.fillStyle = `rgba(${bgColor.join(",")})`;
   ctxB.fillRect(0, 0, canvasB.width, canvasB.height);
   ctxB.drawImage(imgB, 0, 0);
 
@@ -92,8 +96,8 @@ async function yolo() {
 
   const isDiffWithContours = changeArea !== "pixels";
 
-  const diffAdded = getDiff(baseImg, compareImg, true);
   const diffRemoved = getDiff(compareImg, baseImg, true);
+  const diffAdded = getDiff(baseImg, compareImg, true);
 
   const contourAreaInput = document.getElementById("contourArea");
 
@@ -104,9 +108,10 @@ async function yolo() {
   const colorRemove = new cv.Scalar(240, 82, 104, contourDrawOpacity);
 
   if (changeArea === "pixels") {
-    pixelDiff(compareImg, diffAdded.img, diffOverlayWeight, colorAdd);
-    pixelDiff(baseImg, diffRemoved.img, diffOverlayWeight, colorRemove);
+    // pixelDiff(compareImg, diffAdded.img, diffRemoved.img, diffOverlayWeight, colorAdd);
+    pixelDiff(baseImg, diffRemoved.img,  diffAdded.img, diffOverlayWeight, colorRemove);
 
+    
     diffAdded.img.delete();
     diffRemoved.img.delete();
   } else {
@@ -215,8 +220,57 @@ let timeoutId;
     });
   }
 });
+function pixelDiff(target, mask, mask2, diffOverlayWeight, color, colorBoth) {
+  const overlay = target.clone();
 
-function pixelDiff(target, mask, diffOverlayWeight, color) {
+  const maskData = mask.data;
+  let similarPixels = maskData.length;
+
+  for (let i = 0; i < maskData.length; i += 1) {
+    const rgbaIndex = i * 4;
+    if (
+      maskData[i] !== 0 && // mask is not black
+      mask2.data[i] === 0 // mask2 is black
+      //  &&
+      // //overlay is white
+      // overlay.data[rgbaIndex] === 255 &&
+      // overlay.data[rgbaIndex + 1] === 255 &&
+      // overlay.data[rgbaIndex + 2] === 255
+    ) {
+      overlay.data[rgbaIndex] = color[0];
+      overlay.data[rgbaIndex + 1] = color[1];
+      overlay.data[rgbaIndex + 2] = color[2];
+      similarPixels--; // TODO check for similar on-white pixels instead?
+    } else if (
+      maskData[i] !== 0 && // mask is not black
+      mask2.data[i] !== 0 // mask2 is black
+    ) {
+      overlay.data[rgbaIndex] = 251;
+      overlay.data[rgbaIndex + 1] = 225;
+      overlay.data[rgbaIndex + 2] = 86;
+    } else if (
+      colorBoth &&
+      maskData[i] === 0 && // mask is black
+      mask2.data[i] !== 0 // mask2 is not black
+    ) {
+      overlay.data[rgbaIndex] = 240;
+      overlay.data[rgbaIndex + 1] = 82;
+      overlay.data[rgbaIndex + 2] = 104;
+    } else {
+      overlay.data[rgbaIndex] = 0;
+      overlay.data[rgbaIndex + 1] = 0;
+      overlay.data[rgbaIndex + 2] = 0;
+    }
+  }
+  cv.imshow("erode", overlay);
+
+  cv.addWeighted(overlay, diffOverlayWeight, target, 1 - diffOverlayWeight, 0, target, -1);
+  // console.log('similarPixels', similarPixels, 'differentPixels', maskData.length - similarPixels);
+  // console.log('pixelSimilartiy', similarPixels / maskData.length);
+  return similarPixels / maskData.length;
+}
+
+function pixelDiff2(target, mask, diffOverlayWeight, color) {
   let overlay = target.clone();
 
   const maskData = mask.data;
@@ -251,11 +305,11 @@ function getDiff(compareImg, baseImg, calcContours) {
   cv.subtract(compareImg, baseImg, diffImg);
   const grayImg = new cv.Mat();
   cv.cvtColor(diffImg, grayImg, cv.COLOR_BGR2GRAY);
-
-  const th = 26; // up to 10% (26/255) difference is tolerated
+  
+  const th = 15; // up to 10% (26/255) difference is tolerated
   const imask = new cv.Mat();
   cv.threshold(grayImg, imask, th, 255, cv.THRESH_BINARY);
-  cv.imshow("mask", imask);
+  cv.imshow("mask", grayImg);
 
   const kernel = cv.Mat.ones(3, 3, cv.CV_8U);
   const dilate = new cv.Mat();
@@ -441,4 +495,109 @@ function drawContours(
     -1,
   );
   overlay.delete();
+}
+
+
+
+function getBackgroundColorCV(imageMat) {
+  // Define the border width (number of pixels from the border)
+  const borderWidth = 10;
+
+  // Get the image dimensions (rows and columns)
+  const rows = imageMat.rows;
+  const cols = imageMat.cols;
+
+  // Extract the outermost 10 pixels along the top, bottom, left, and right borders
+  const topBorder = imageMat.rowRange(0, borderWidth);
+  const bottomBorder = imageMat.rowRange(rows - borderWidth, rows);
+  const leftBorder = imageMat.colRange(0, borderWidth);
+  const rightBorder = imageMat.colRange(cols - borderWidth, cols);
+
+  
+  // Concatenate all border regions
+  const allBorders = new cv.Mat();
+
+  const topBottom = new cv.MatVector();
+  topBottom.push_back(topBorder);
+  topBottom.push_back(bottomBorder);
+  cv.vconcat(topBottom, allBorders);
+
+  
+  const leftRight = new cv.MatVector();
+  topBottom.push_back(leftBorder);
+  topBottom.push_back(rightBorder);
+  cv.hconcat(leftRight, allBorders);
+  
+  // // Convert the concatenated border regions to a flattened array
+  // const borderPixels = allBorders.reshape(-1, 3);
+  
+  // // Calculate the histogram of colors
+  const images = new cv.MatVector();
+  images.push_back(allBorders);
+
+  const hist = new cv.Mat();
+  cv.calcHist(
+    images, // source image
+    //  1, // number of images
+    [0, 1, 2], // channels
+    new cv.Mat(),  // mask
+    hist,  // output histogram
+    [256, 256, 256], // histogram size/diWensionality
+     [0, 256, 0, 256, 0, 256] // ranges
+     );
+     
+     
+     // // Find the most frequent color
+     
+     const maxVal = new cv.Mat();
+     console.log('servus')
+     cv.minMaxLoc(hist, maxVal);
+    //  const mostFrequentColor = cv.minMaxLoc(hist).maxLoc;
+  // // Extract RGB values
+  // const [b, g, r] = mostFrequentColor;
+
+  // console.log(`Most frequent color (RGB): R=${r}, G=${g}, B=${b}`);
+  // return {r,g,b};
+}
+
+function getBackgroundColor(ctx, width, height, borderPixels) {
+  const topBorder = ctx.getImageData(0, 0, width, borderPixels).data;
+  const bottomBorder = ctx.getImageData(0, height-borderPixels, width, borderPixels).data;
+
+  const leftBorder = ctx.getImageData(0, borderPixels, borderPixels, height-borderPixels).data; // left border without top and bottom border
+  const rightBorder = ctx.getImageData(width-borderPixels, borderPixels, borderPixels, height-borderPixels).data; // right border without top and bottom border
+
+  //output length of all borders
+  // console.log('topBorder', topBorder.length); // width * borderpixels * 4 (rgba)
+  // console.log('bottomBorder', bottomBorder.length);
+  // console.log('leftBorder', leftBorder.length);
+  // console.log('rightBorder', rightBorder.length);
+  
+  // concat all borders
+  const allBorders = new Uint8Array(topBorder.length + bottomBorder.length + leftBorder.length + rightBorder.length);
+  allBorders.set(topBorder);
+  allBorders.set(bottomBorder, topBorder.length);
+  allBorders.set(leftBorder, topBorder.length + bottomBorder.length);
+  allBorders.set(rightBorder, topBorder.length + bottomBorder.length + leftBorder.length);
+
+  // find most frequent color
+  const colorCount = {};
+  let maxColor = undefined;
+  let maxCount = 0;
+  for (let i = 0; i < allBorders.length; i += 4) {
+    const color = allBorders.slice(i, i + 4).join(","); // +4 because rgba and slice end index is exclusive
+    colorCount[color] = (colorCount[color] ?? 0) + 1;
+    if (colorCount[color] > maxCount) {
+      maxCount = colorCount[color];
+      maxColor = color;
+    }
+
+    // abort early if we found a color that is in the majority
+    if (maxCount > (allBorders.length / 4) - i) {
+      console.debug(maxColor, 'occurs', maxCount, 'times, aborting early as only', (allBorders.length / 4) - i, 'pixels are left to check');
+      break;
+    }
+  }
+
+  return maxColor.split(",").map((c) => parseInt(c));
 }
